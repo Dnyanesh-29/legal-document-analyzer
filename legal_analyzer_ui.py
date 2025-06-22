@@ -1,65 +1,155 @@
 import streamlit as st
-from legal_analyzer import LegalDocumentAnalyzer
 import tempfile
 import os
+import sys
+import re
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+
+from legal_analyzer import LegalDocumentAnalyzer
+
 
 st.set_page_config(page_title="Legal Document Analyzer", layout="wide")
-st.title("📄 Legal Document Analyzer")
-st.write("Upload a legal document to analyze its content, identify important clauses, and get signing recommendations.")
+st.markdown("# 📄 Legal Document Analyzer")
+st.markdown("Upload a legal document to analyze its content, extract clauses, and get signing insights.")
 
-uploaded_file = st.file_uploader("Choose a document (.pdf, .docx, .txt)", type=["pdf", "docx", "txt"])
 
-if uploaded_file:
+st.sidebar.header("Upload Document")
+uploaded_file = st.sidebar.file_uploader("Choose a file", type=["pdf", "docx", "txt"])
+analyze_button = st.sidebar.button("📊 Analyze Document")
+
+# Custom CSS
+st.markdown("""
+    <style>
+      .highlight {
+        color: red;
+        font-weight: bold;
+        background: none;
+    }
+    .stMetric { font-size: 1.2em; }
+    </style>
+""", unsafe_allow_html=True)
+
+if uploaded_file and analyze_button:
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
         tmp_file.write(uploaded_file.read())
         file_path = tmp_file.name
 
-    if st.button("Analyze Document"):
-        analyzer = LegalDocumentAnalyzer(verbose=False)
-        with st.spinner("Analyzing..."):
+    analyzer = LegalDocumentAnalyzer(verbose=False)
+
+    with st.spinner("🔎 Analyzing... Please wait."):
+        try:
             results = analyzer.analyze(file_path)
+            tabs = st.tabs(["🔍 Summary", "📌 Clauses", "🧠 Entities", "📊 Statistics", "📝 Recommendation"])
 
-        # Clean up temp file
-        os.unlink(file_path)
+            # Tab 1: Summary
+            with tabs[0]:
+                st.subheader("🔍 Summary")
+                st.info(results.summary)
 
-        st.subheader("🔍 Summary")
-        st.write(results.summary)
+            # Tab 2: Clauses
+            with tabs[1]:
+                st.subheader("📌 Detected Clauses")
+                if results.clauses:
+                    for clause_name, matches in results.clauses.items():
+                        if matches:
+                            unique_lines = sorted(set([m['line_number'] for m in matches]))
+                            line_str = ", ".join(map(str, unique_lines))
+                            st.markdown(f"**{clause_name.replace('_', ' ').title()}** found on line(s): `{line_str}` ({len(matches)} match(es))")
+                            with st.expander(f"📄 Show matches for {clause_name.replace('_', ' ').title()}"):
+                                doc = analyzer.nlp(results.cleaned_text)
+                                for i, m in enumerate(matches):
+                                    text = m['text']
+                                    start, end = m['positions']
+                                    sentence = None
+                                    for sent in doc.sents:
+                                        if sent.start_char <= start and end <= sent.end_char:
+                                            sentence = sent.text
+                                            break
 
-        st.subheader("📌 Clauses Found")
-        for clause, matches in results.clauses.items():
-            if matches:
-                with st.expander(f"{clause.title()} ({len(matches)} occurrence{'s' if len(matches) > 1 else ''})"):
-                    for m in matches[:3]:
-                        st.markdown(f"> {m['text']}")
+                                    if not sentence or (len(sentence.split()) <= 10 and not re.search(r'[.!?]$', sentence.strip())):
+                                        context_start = max(0, results.cleaned_text.rfind('\n\n', 0, start))
+                                        context_end = min(len(results.cleaned_text), results.cleaned_text.find('\n\n', end))
+                                        if context_end == -1: context_end = len(results.cleaned_text)
+                                        sentence = results.cleaned_text[context_start:context_end].strip()
+                                        sentence = re.sub(r'\s+', ' ', sentence)
 
-        st.subheader("🧠 Named Entities")
-        for ent_type, ents in results.entities.items():
-            st.markdown(f"**{ent_type}:** {', '.join(ents[:5])}")
+                                    # Highlight clause
+                                    highlighted = sentence.replace(text, f"<span class='highlight'>{text}</span>", 1)
+                                    st.markdown(f"- **Match {i+1} (Line {m['line_number']}):**<br>{highlighted}", unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"- **{clause_name.replace('_', ' ').title()}**: Not found.")
+                else:
+                    st.info("No clauses matched known legal patterns.")
 
-        st.subheader("📊 Document Statistics")
-        st.write(results.statistics)
+            # Tab 3: Entities
+            with tabs[2]:
+                st.subheader("🧠 Named Entities")
+                if results.entities:
+                    for ent_type, ents in results.entities.items():
+                        st.markdown(f"**{ent_type.replace('_', ' ').title()}:** {', '.join(ents[:10])}")
+                        if len(ents) > 10:
+                            st.caption(f"(and {len(ents) - 10} more...)")
+                else:
+                    st.info("No named entities identified.")
 
-        st.subheader("📝 Signing Recommendation")
-        rec = results.signing_recommendation
-        st.metric("Score", f"{rec['percentage']}%")
-        st.success(rec["recommendation"] if rec["percentage"] >= 60 else "")
-        st.warning(rec["recommendation"] if 40 <= rec["percentage"] < 60 else "")
-        st.error(rec["recommendation"] if rec["percentage"] < 40 else "")
+            # Tab 4: Stats
+            with tabs[3]:
+                st.subheader("📊 Document Statistics")
+                for stat, value in results.statistics.items():
+                    st.write(f"- **{stat.replace('_', ' ').title()}**: {value}")
 
-        with st.expander("🔎 Favorable Factors"):
-            for factor in rec["findings"]["favorable_factors"]:
-                st.markdown(f"- **{factor['description']}** (+{factor['weight']} points)")
-                for ex in factor.get("examples", []):
-                    st.code(ex.strip())
+            # Tab 5: Recommendation
+            with tabs[4]:
+                st.subheader("📝 Signing Recommendation")
+                rec = results.signing_recommendation
 
-        with st.expander("⚠️ Risk Factors"):
-            for factor in rec["findings"]["risk_factors"]:
-                st.markdown(f"- **{factor['description']}** ({factor['weight']} points)")
-                for ex in factor.get("examples", []):
-                    st.code(ex.strip())
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    st.metric("🔒 Score", f"{rec['percentage']}%", delta="↑" if rec["percentage"] >= 50 else "↓")
 
-        if rec["missing_clauses"]:
-            st.subheader("🚫 Missing Clauses")
-            st.warning(", ".join([clause.replace("_", " ").title() for clause in rec["missing_clauses"]]))
+                with col2:
+                    if rec["percentage"] >= 80:
+                        st.success(f"🟢 {rec['recommendation']}")
+                    elif rec["percentage"] >= 65:
+                        st.success(f"✅ {rec['recommendation']}")
+                    elif rec["percentage"] >= 50:
+                        st.warning(f"⚠️ {rec['recommendation']}")
+                    else:
+                        st.error(f"❌ {rec['recommendation']}")
 
-        st.caption("Disclaimer: This tool is for informational purposes only and not a substitute for legal advice.")
+                with st.expander("✅ Favorable Factors"):
+                    if rec["findings"]["favorable_factors"]:
+                        for f in rec["findings"]["favorable_factors"]:
+                            st.markdown(f"- **🔹 {f['description']}** *(+{f['weight']} pts)*")
+                            for ex in f.get("examples", []):
+                                st.code(ex.strip())
+                    else:
+                        st.info("No favorable factors found.")
+
+                with st.expander("❌ Risk Factors"):
+                    if rec["findings"]["risk_factors"]:
+                        for f in rec["findings"]["risk_factors"]:
+                            st.markdown(f"- **🔻 {f['description']}** *(-{f['weight']} pts)*")
+                            for ex in f.get("examples", []):
+                                st.code(ex.strip())
+                    else:
+                        st.info("No risk factors found.")
+
+                if rec["missing_clauses"]:
+                    st.subheader("🚫 Missing Clauses")
+                    st.error("⚠️ Potentially missing critical clauses:")
+                    for clause in rec["missing_clauses"]:
+                        st.markdown(f"- ❗ **{clause.replace('_', ' ').title()}**")
+                else:
+                    st.success("✅ All critical clauses are present.")
+
+        except Exception as e:
+            st.error("An error occurred during analysis.")
+            st.exception(e)
+
+    os.unlink(file_path)
+
+st.caption("🛈 This tool is for informational purposes only and not a substitute for professional legal advice.")

@@ -1,0 +1,146 @@
+*MASTER MUTUAL NON-DISCLOSURE AGREEMENT**
+
+This Master Mutual Non-Disclosure Agreement (the "Agreement") is made and entered into as of **May 24, 2025** (the "Effective Date"),
+
+**BY AND BETWEEN:**
+
+**1. NOVACORE SYSTEMS LTD.**, a company duly incorporated under the laws of England and Wales, with its registered office at One Canada Square, Canary Wharf, London E14 5AB, United Kingdom (hereinafter referred to as the "Disclosing Party");
+
+**AND**
+
+**2. ORBITAL SOLUTIONS INC.**, a corporation duly organized and existing under the laws of the State of Delaware, with its principal place of business at 1000 Main Street, Suite 500, Wilmington, DE 19801, United States (hereinafter referred to as the "Receiving Party").
+
+(Each a "Party" and collectively, the "Parties").
+
+**RECITALS:**
+
+WHEREAS, each Party possesses certain proprietary, confidential, and trade secret information that it considers highly valuable and essential to its business operations;
+
+WHEREAS, the Parties desire to engage in discussions and evaluate a potential strategic partnership concerning the integration of AI-driven software (the "Permitted Purpose"), which will necessitate the mutual exchange of Confidential Information;
+
+WHEREAS, the Parties recognize the critical importance of protecting such Confidential Information and wish to establish clear terms for its handling and protection;
+
+NOW, THEREFORE, in consideration of the foregoing recitals, the mutual covenants, conditions, and agreements contained herein, and other good and valuable consideration, the receipt and sufficiency of which are hereby acknowledged, the Parties hereby agree as follows:
+
+---
+
+**ARTICLE 1: DEFINITIONS**
+
+**1.1. "Confidential Information"** shall mean any and all non-public information, whether technical, business, financial, strategic, commercial, operational, or otherwise, including but not limited to, trade secrets, know-how, inventions, discoveries, specifications, designs, schematics, algorithms, formulas, processes, procedures, software, intellectual property rights, product plans, research, development, data, analyses, compilations, forecasts, customer lists, vendor lists, pricing information, marketing plans, business plans, financial data, personnel information, and any other proprietary information, whether oral, written, graphic, electronic, or in any other tangible or intangible form or medium, disclosed by the Disclosing Party to the Receiving Party, directly or indirectly, whether before or after the Effective Date, which is (a) designated as confidential or proprietary at the time of disclosure, or (b) which, by its nature or the circumstances surrounding its disclosure, would reasonably be understood to be confidential.
+
+**1.2. "Representatives"** shall mean a Party's directors, officers, employees, legal counsel, independent contractors, and professional advisors who have a bona fide need to know the Confidential Information for the Permitted Purpose and who are legally bound by written confidentiality obligations no less stringent than those set forth in this Agreement.
+
+---
+
+**ARTICLE 2: MUTUAL NON-DISCLOSURE AND NON-USE OBLIGATIONS**
+
+**2.1. Protection of Confidential Information.** Each Receiving Party agrees to:
+    (a) Hold all Confidential Information received from the Disclosing Party in strict confidence and prevent any unauthorized access, use, or disclosure thereof.
+    (b) Use the Confidential Information solely for the Permitted Purpose and for no other reason whatsoever.
+    (c) Not copy, reproduce, reverse engineer, decompile, or otherwise create derivative works of the Confidential Information without the Disclosing Party's prior express written consent.
+    (d) Disclose Confidential Information only to its Representatives strictly on a "need-to-know" basis for the Permitted Purpose. The Receiving Party shall be responsible for any breach of this Agreement by its Representatives.
+    (e) Implement and maintain reasonable and appropriate security measures to protect the Confidential Information, which shall be at least as stringent as the measures it uses to protect its own highly confidential and proprietary information of a similar nature, but in no event less than industry-standard reasonable care.
+
+**2.2. Unauthorized Disclosure.** The Receiving Party shall immediately notify the Disclosing Party in writing upon discovery of any unauthorized use, disclosure, or access to Confidential Information, or any other actual or suspected breach of this Agreement, and will cooperate fully with the Disclosing Party in every reasonable way to mitigate the effects of such unauthorized use, disclosure, or breach.
+
+---
+
+**ARTICLE 3: EXCEPTIONS TO CONFIDENTIAL INFORMATION**
+
+**3.1. Exclusions.** The obligations of non-disclosure and non-use under this Agreement shall not apply to any information that the Receiving Party can demonstrate by clear and convincing evidence:
+    (a) Is or becomes publicly available through no act or omission of the Receiving Party or its Representatives;
+    (b) Was lawfully known to the Receiving Party, without obligation of confidentiality, prior to its disclosure by the Disclosing Party;
+    (c) Is rightfully received by the Receiving Party from a third party without restriction on disclosure and without breach of this Agreement or any other confidentiality obligation known to the Receiving Party;
+    (d) Is independently developed by the Receiving Party without use of or reference to the Disclosing Party's Confidential Information; or
+    (e) Is required to be disclosed by law, regulation, or by the order of a court or governmental authority of competent jurisdiction, provided that the Receiving Party gives the Disclosing Party prompt written notice of such requirement (where legally permissible) to enable the Disclosing Party to seek a protective order or other appropriate remedy. The Receiving Party shall cooperate with the Disclosing Party in any such effort and shall disclose only that portion of the Confidential Information that is legally required and no more.
+
+---
+
+**ARTICLE 4: TERM AND TERMINATION**
+
+**4.1. Term.** This Agreement shall commence on the Effective Date and shall continue for a period of **five (5) years** from the Effective Date (the "Term"), unless earlier terminated in accordance with the provisions herein.
+
+**4.2. Termination.** Either Party may terminate this Agreement for any reason by providing **ninety (90) days' prior written notice** to the other Party.
+
+**4.3. Effect of Termination.** Upon any termination or expiration of this Agreement:
+    (a) The Receiving Party shall, at the Disclosing Party's sole option, promptly return to the Disclosing Party or irrevocably destroy all Confidential Information (and all copies, extracts, notes, analyses, and summaries thereof) in its possession or control, whether in physical or electronic form. The Receiving Party shall provide written certification of such return or destruction, executed by an authorized officer, within ten (10) business days of the Disclosing Party's request.
+    (b) The obligations of confidentiality and non-use set forth in Article 2 shall survive the termination or expiration of this Agreement for a period of **ten (10) years** from the date of disclosure of the respective Confidential Information, or indefinitely for information constituting a trade secret under applicable law.
+    (c) Termination shall not relieve the Receiving Party of any obligations or liabilities incurred prior to termination.
+
+---
+
+**ARTICLE 5: REPRESENTATIONS AND WARRANTIES**
+
+**5.1. Authority.** Each Party represents and warrants that it has the full corporate power and authority to enter into this Agreement and to perform its obligations hereunder, and that the execution and delivery of this Agreement will not violate any agreement or obligation to which it is a party.
+
+**5.2. No Warranty on Information.** The Disclosing Party provides the Confidential Information on an "AS IS" basis and makes no representations or warranties, express, implied, statutory, or otherwise, regarding the accuracy, completeness, operability, or performance of the Confidential Information. The Disclosing Party shall have no liability whatsoever resulting from the Receiving Party’s use of the Confidential Information.
+
+---
+
+---
+
+---
+
+**ARTICLE 8: GOVERNING LAW AND DISPUTE RESOLUTION**
+
+**8.2. Jurisdiction and Venue.** The Parties irrevocably agree that any legal action, suit, or proceeding arising out of or relating to this Agreement, which is not subject to arbitration under Section 8.3, shall be instituted exclusively in the state or federal courts located in **New Castle County, Delaware**. Each Party hereby irrevocably and unconditionally waives any objection to personal jurisdiction or venue in such courts.
+
+**8.3. Dispute Resolution - Arbitration.** Any dispute, controversy, or claim arising out of or relating to this Agreement, or the breach, termination, or invalidity thereof, shall be finally settled by **binding arbitration** administered by the American Arbitration Association ("AAA") under its Commercial Arbitration Rules then in effect.
+    (a) The arbitration shall be conducted by a single arbitrator, mutually agreed upon by the Parties or, failing agreement within thirty (30) days, appointed in accordance with the AAA Rules.
+    (b) The place of arbitration shall be **Wilmington, Delaware**, United States.
+    (c) The language of the arbitration shall be English.
+    (d) The award rendered by the arbitrator shall be final and binding upon both Parties, and judgment on the award may be entered in any court having jurisdiction thereof. The arbitrator shall have the authority to grant any remedy or relief that a court in the applicable jurisdiction could grant, including injunctive relief.
+
+---
+
+**ARTICLE 9: GENERAL PROVISIONS**
+
+**9.1. Entire Agreement.** This Agreement constitutes the entire agreement between the Parties with respect to the subject matter hereof and supersedes all prior and contemporaneous understandings, agreements, proposals, and discussions, whether oral or written, between the Parties relating to the subject matter hereof.
+
+**9.2. Amendment.** No amendment, modification, or waiver of any provision of this Agreement shall be effective unless it is in writing and signed by duly authorized representatives of both Parties.
+
+**9.3. Waiver.** No failure or delay by either Party in exercising any right, power, or remedy hereunder shall operate as a waiver thereof, nor shall any single or partial exercise of any such right, power, or remedy preclude any other or further exercise thereof or the exercise of any other right, power, or remedy.
+
+**9.4. Severability.** If any provision of this Agreement is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction, such provision shall be deemed severed from this Agreement, and the validity, legality, and enforceability of the remaining provisions shall not in any way be affected or impaired thereby. The Parties shall negotiate in good faith to replace any such invalid, illegal, or unenforceable provision with a valid, legal, and enforceable provision that most closely reflects the original intent of the Parties.
+
+**9.5. Assignment.** Neither Party may assign or transfer any of its rights or obligations under this Agreement without the prior written consent of the other Party, which consent shall not be unreasonably withheld, conditioned, or delayed. Any attempted assignment or transfer in violation of this Section shall be null and void.
+
+**9.6. Notices.** All notices, consents, demands, and other communications required or permitted to be given or made under this Agreement shall be in writing and shall be deemed effectively given: (a) upon personal delivery; (b) upon the first business day after deposit with an internationally recognized overnight courier service, with tracking capabilities, for delivery; or (c) upon actual receipt by email, to the addresses set forth below or to such other address as a Party may designate by notice hereunder:
+
+    **If to Disclosing Party (NOVACORE SYSTEMS LTD.):**
+    Attention: Legal Department
+    One Canada Square, Canary Wharf
+    London E14 5AB, United Kingdom
+    Email: legal@novacoresystems.com
+
+    **If to Receiving Party (ORBITAL SOLUTIONS INC.):**
+    Attention: Legal Department
+    1000 Main Street, Suite 500
+    Wilmington, DE 19801, United States
+    Email: contracts@orbitalsolutions.com
+
+**9.7. Counterparts.** This Agreement may be executed in any number of counterparts, each of which shall be deemed an original, but all of which together shall constitute one and the same instrument. Facsimile or electronic signatures shall be deemed to have the same effect as original signatures.
+
+**9.8. Headings.** The headings and subheadings in this Agreement are for convenience of reference only and shall not affect its interpretation.
+
+**9.9. Independent Contractors.** The relationship of the Parties established by this Agreement is solely that of independent contractors. This Agreement does not create any partnership, joint venture, agency, employment, or other similar relationship between the Parties.
+
+---
+
+IN WITNESS WHEREOF, the Parties have caused this Agreement to be executed by their duly authorized representatives as of the Effective Date.
+
+**DISCLOSING PARTY:**
+
+**NOVACORE SYSTEMS LTD.**
+
+By: ___________________________________
+Name: **Ms. Eleanor Vance**
+Title: Chief Legal Officer
+
+**RECEIVING PARTY:**
+
+**ORBITAL SOLUTIONS INC.**
+
+By: ___________________________________
+Name: **Mr. David Kim**
+Title: President

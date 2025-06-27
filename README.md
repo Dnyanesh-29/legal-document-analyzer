@@ -34,7 +34,7 @@ It’s essentially a pocket-sized legal assistant for anyone who needs help revi
 Clone the project
 
 ```bash
-  git clone https://github.com/Dnyanesh-29/legal-document-analyzer/blob/main/legal_analyzer.py
+  https://github.com/Dnyanesh-29/legal-document-analyzer
 ```
 
 Go to the project directory

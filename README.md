@@ -54,7 +54,7 @@ Start the server
 ```bash
   streamlit run legal_analyzer_ui.py
 ```
-
+ 
 
 ## Screenshots
 

@@ -13,7 +13,7 @@ It’s essentially a pocket-sized legal assistant for anyone who needs help revi
 
 
 
-## Tech Stack
+## Tech Stack    
 
  **Core Technologies:**- 
 - Python 3 – The backbone language used for development.

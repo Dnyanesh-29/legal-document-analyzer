@@ -49,7 +49,7 @@ Install dependencies
   pip install
 ```
 
-Start the server
+Start the server     
 
 ```bash
   streamlit run legal_analyzer_ui.py

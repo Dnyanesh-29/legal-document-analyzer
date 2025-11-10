@@ -1,4 +1,4 @@
-
+ 
 # Legal Document Analyzer
 
 The Legal Document Analyzer is a Python-based application that helps make sense of complex legal documents. Designed primarily for students, individuals, and small organizations without easy access to legal professionals, it automates the analysis of legal text using natural language processing (NLP).
@@ -6,7 +6,7 @@ Here's what it does in a nutshell:
 - Extracts key clauses like confidentiality and indemnification
 - Identifies named entities such as companies, dates, and monetary amounts      
 - Summarizes the document to provide quick insights
-- Evaluates risks and favorable terms to produce a signing recommendation
+- Evaluates risks and favorable terms to produce a signing recommendation            
 - Delivers all results via a simple web interface powered by Streamlit
 It’s essentially a pocket-sized legal assistant for anyone who needs help reviewing contracts or understanding legal jargon—no law degree required.
 

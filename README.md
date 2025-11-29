@@ -43,7 +43,7 @@ The system consists of:
 ### **Frontend**
 
 * **Next.js** (React framework)
-* TailwindCSS (if applicable)
+* TailwindCSS 
 * Axios for backend communication
 
 ### **Backend**

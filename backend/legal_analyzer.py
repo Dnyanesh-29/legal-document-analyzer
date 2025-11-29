@@ -2,13 +2,37 @@ import re
 import unicodedata
 from PyPDF2 import PdfReader
 from docx import Document
-from dataclasses import dataclass, field # Import 'field'
+from dataclasses import dataclass, field 
 from typing import Dict, List, Tuple, Any
 import spacy
 from spacy.matcher import Matcher
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lsa import LsaSummarizer
+from difflib import SequenceMatcher
+
+ # Update the ComparisonResult dataclass to include new fields
+@dataclass
+class AnalysisResult:
+    """Results from analyzing a single legal document"""
+    clauses: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
+    entities: Dict[str, List[str]] = field(default_factory=dict)
+    summary: str = ""
+    statistics: Dict[str, int] = field(default_factory=dict)
+    cleaned_text: str = ""
+    signing_recommendation: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class ComparisonResult:
+    doc1_path: str
+    doc2_path: str
+    clause_differences: Dict[str, Dict[str, Any]]
+    entity_differences: Dict[str, Dict[str, Any]]
+    summary_comparison: Dict[str, Any]  # Changed from str to dict
+    recommendation_comparison: Dict[str, Any]
+    statistics_comparison: Dict[str, Any] = field(default_factory=dict)
+    critical_differences: List[Dict[str, Any]] = field(default_factory=list)
+    overall_similarity: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class AnalysisResult:
@@ -450,7 +474,8 @@ class LegalDocumentAnalyzer:
 
     def calculate_signing_recommendation(self, text: str, clause_data: Dict[str, Any], extracted_entities: Dict[str, List[str]]) -> Dict[str, Any]:
         # Start with a neutral base score
-        base_score = 50
+        # base_score = 50
+        base_score = 60
         score = base_score
         findings = {
             "favorable_factors": [],
@@ -601,3 +626,769 @@ class LegalDocumentAnalyzer:
             # Pass extracted_entities to calculate_signing_recommendation
             signing_recommendation=self.calculate_signing_recommendation(cleaned_text, clauses, entities)
         )
+   
+
+    
+    from typing import List, Set
+
+    def compare_documents(self, file_path1: str, file_path2: str) -> ComparisonResult:
+        """
+        Enhanced document comparison with detailed clause and entity analysis.
+        Provides actionable insights on differences between two legal documents.
+        """
+        # Analyze both documents
+        result1 = self.analyze(file_path1)
+        result2 = self.analyze(file_path2)
+
+        # ===== Enhanced Clause Comparison =====
+        clause_diff = {}
+        all_clause_types = set(result1.clauses.keys()).union(result2.clauses.keys())
+        
+        for clause_name in all_clause_types:
+            doc1_clauses = result1.clauses.get(clause_name, [])
+            doc2_clauses = result2.clauses.get(clause_name, [])
+            
+            # Extract just the text for comparison
+            doc1_texts = [c["text"] for c in doc1_clauses]
+            doc2_texts = [c["text"] for c in doc2_clauses]
+            
+            # Determine status
+            if doc1_clauses and doc2_clauses:
+                status = "present_in_both"
+                # Calculate similarity between clause texts
+                similarity = self._calculate_text_similarity(
+                    " ".join(doc1_texts), 
+                    " ".join(doc2_texts)
+                )
+            elif doc1_clauses and not doc2_clauses:
+                status = "only_in_doc1"
+                similarity = 0.0
+            elif doc2_clauses and not doc1_clauses:
+                status = "only_in_doc2"
+                similarity = 0.0
+            else:
+                continue  # Skip if absent in both
+            
+            clause_diff[clause_name] = {
+                "status": status,
+                "similarity": round(similarity * 100, 2),
+                "doc1": {
+                    "count": len(doc1_clauses),
+                    "texts": doc1_texts,
+                    "line_numbers": [c["line_number"] for c in doc1_clauses]
+                },
+                "doc2": {
+                    "count": len(doc2_clauses),
+                    "texts": doc2_texts,
+                    "line_numbers": [c["line_number"] for c in doc2_clauses]
+                },
+                "analysis": self._analyze_clause_difference(
+                    clause_name, doc1_texts, doc2_texts
+                )
+            }
+
+        # ===== Enhanced Entity Comparison =====
+        entity_diff = {}
+        all_entity_types = set(result1.entities.keys()).union(result2.entities.keys())
+        
+        for entity_name in all_entity_types:
+            doc1_entities = set(result1.entities.get(entity_name, []))
+            doc2_entities = set(result2.entities.get(entity_name, []))
+            
+            common = doc1_entities.intersection(doc2_entities)
+            only_in_1 = doc1_entities - doc2_entities
+            only_in_2 = doc2_entities - doc1_entities
+            
+            # Calculate Jaccard similarity
+            union = doc1_entities.union(doc2_entities)
+            similarity = len(common) / len(union) if union else 1.0
+            
+            entity_diff[entity_name] = {
+                "similarity": round(similarity * 100, 2),
+                "common": sorted(list(common)),
+                "only_in_doc1": sorted(list(only_in_1)),
+                "only_in_doc2": sorted(list(only_in_2)),
+                "doc1_count": len(doc1_entities),
+                "doc2_count": len(doc2_entities),
+                "significance": self._assess_entity_significance(entity_name, only_in_1, only_in_2)
+            }
+
+        # ===== Enhanced Summary Comparison =====
+        summary_similarity = self._calculate_text_similarity(
+            result1.summary, 
+            result2.summary
+        )
+        
+        summary_comp = {
+            "doc1_summary": result1.summary,
+            "doc2_summary": result2.summary,
+            "similarity": round(summary_similarity * 100, 2),
+            "key_differences": self._extract_summary_differences(
+                result1.summary, 
+                result2.summary
+            )
+        }
+
+        # ===== Risk Score Comparison =====
+        rec_comp = {
+            "doc1": {
+                "score": result1.signing_recommendation["percentage"],
+                "recommendation": result1.signing_recommendation["recommendation"],
+                "risk_factors": result1.signing_recommendation["findings"]["risk_factors"],
+                "favorable_factors": result1.signing_recommendation["findings"]["favorable_factors"]
+            },
+            "doc2": {
+                "score": result2.signing_recommendation["percentage"],
+                "recommendation": result2.signing_recommendation["recommendation"],
+                "risk_factors": result2.signing_recommendation["findings"]["risk_factors"],
+                "favorable_factors": result2.signing_recommendation["findings"]["favorable_factors"]
+            },
+            "score_difference": result2.signing_recommendation["percentage"] - 
+                            result1.signing_recommendation["percentage"],
+            "which_is_better": self._determine_better_document(
+                result1.signing_recommendation, 
+                result2.signing_recommendation
+            )
+        }
+
+        # ===== Statistical Comparison =====
+        stats_comp = {
+            "doc1": result1.statistics,
+            "doc2": result2.statistics,
+            "differences": {
+                "word_count_diff": result2.statistics["word_count"] - result1.statistics["word_count"],
+                "char_count_diff": result2.statistics["char_count"] - result1.statistics["char_count"],
+                "paragraph_count_diff": result2.statistics["paragraph_count"] - result1.statistics["paragraph_count"]
+            }
+        }
+
+        # ===== Critical Differences Analysis =====
+        critical_diffs = self._identify_critical_differences(
+            clause_diff, 
+            entity_diff, 
+            rec_comp
+        )
+
+        # Return enhanced comparison result
+        return ComparisonResult(
+            doc1_path=file_path1,
+            doc2_path=file_path2,
+            clause_differences=clause_diff,
+            entity_differences=entity_diff,
+            summary_comparison=summary_comp,
+            recommendation_comparison=rec_comp,
+            statistics_comparison=stats_comp,
+            critical_differences=critical_diffs,
+            overall_similarity=self._calculate_overall_similarity(
+                clause_diff, 
+                entity_diff, 
+                summary_similarity
+            )
+        )
+
+
+    def _calculate_text_similarity(self, text1: str, text2: str) -> float:
+        """Calculate similarity ratio between two texts using SequenceMatcher."""
+        if not text1 and not text2:
+            return 1.0
+        if not text1 or not text2:
+            return 0.0
+        return SequenceMatcher(None, text1.lower(), text2.lower()).ratio()
+
+
+    def _analyze_clause_difference(self, clause_name: str, doc1_texts: List[str], 
+                                doc2_texts: List[str]) -> str:
+        """Provide human-readable analysis of clause differences."""
+        if not doc1_texts and not doc2_texts:
+            return "Clause absent in both documents"
+        elif not doc1_texts:
+            return f"Clause only present in Document 2 ({len(doc2_texts)} occurrence(s))"
+        elif not doc2_texts:
+            return f"Clause only present in Document 1 ({len(doc1_texts)} occurrence(s))"
+        else:
+            count_diff = len(doc2_texts) - len(doc1_texts)
+            if count_diff > 0:
+                return f"Clause appears more frequently in Doc 2 (+{count_diff} occurrence(s))"
+            elif count_diff < 0:
+                return f"Clause appears more frequently in Doc 1 ({count_diff} occurrence(s))"
+            else:
+                # Same count, check text similarity
+                similarity = self._calculate_text_similarity(
+                    " ".join(doc1_texts), 
+                    " ".join(doc2_texts)
+                )
+                if similarity > 0.9:
+                    return "Clauses are substantially similar"
+                elif similarity > 0.7:
+                    return "Clauses have moderate differences in wording"
+                else:
+                    return "Clauses have significant wording differences"
+
+
+    def _assess_entity_significance(self, entity_type: str, only_in_1: Set[str], 
+                                    only_in_2: Set[str]) -> str:
+        """Assess the significance of entity differences."""
+        critical_types = {
+            "CONTRACT_PARTIES", "MONEY_AMOUNTS", "GOVERNING_LAW_LOCATIONS",
+            "CONTRACT_DATES", "COMPANY_NAMES"
+        }
+        
+        if entity_type in critical_types:
+            if only_in_1 or only_in_2:
+                return "HIGH - Critical entity differences detected"
+            else:
+                return "LOW - Critical entities match"
+        else:
+            if len(only_in_1) + len(only_in_2) > 5:
+                return "MEDIUM - Multiple entity differences"
+            else:
+                return "LOW - Minor entity differences"
+
+
+    def _extract_summary_differences(self, summary1: str, summary2: str) -> List[str]:
+        """Extract key differences between summaries."""
+        differences = []
+        
+        # Split into sentences
+        sentences1 = set(sent.strip() for sent in summary1.split('.') if sent.strip())
+        sentences2 = set(sent.strip() for sent in summary2.split('.') if sent.strip())
+        
+        unique_to_1 = sentences1 - sentences2
+        unique_to_2 = sentences2 - sentences1
+        
+        if unique_to_1:
+            differences.append(f"Doc 1 unique points: {'; '.join(list(unique_to_1)[:2])}")
+        if unique_to_2:
+            differences.append(f"Doc 2 unique points: {'; '.join(list(unique_to_2)[:2])}")
+        
+        return differences if differences else ["Summaries are very similar"]
+
+
+    def _determine_better_document(self, rec1: dict, rec2: dict) -> dict:
+        """Determine which document is more favorable based on multiple factors."""
+        score1 = rec1["percentage"]
+        score2 = rec2["percentage"]
+        
+        risk_count1 = len(rec1["findings"]["risk_factors"])
+        risk_count2 = len(rec2["findings"]["risk_factors"])
+        
+        if score2 > score1 + 10:  # Significant difference
+            return {
+                "better_document": "Document 2",
+                "reason": f"Significantly higher score ({score2} vs {score1})",
+                "recommendation": "Consider using Document 2 as the base"
+            }
+        elif score1 > score2 + 10:
+            return {
+                "better_document": "Document 1",
+                "reason": f"Significantly higher score ({score1} vs {score2})",
+                "recommendation": "Consider using Document 1 as the base"
+            }
+        else:
+            if risk_count1 < risk_count2:
+                return {
+                    "better_document": "Document 1",
+                    "reason": f"Fewer risk factors ({risk_count1} vs {risk_count2})",
+                    "recommendation": "Document 1 has fewer identified risks"
+                }
+            elif risk_count2 < risk_count1:
+                return {
+                    "better_document": "Document 2",
+                    "reason": f"Fewer risk factors ({risk_count2} vs {risk_count1})",
+                    "recommendation": "Document 2 has fewer identified risks"
+                }
+            else:
+                return {
+                    "better_document": "Similar",
+                    "reason": "Both documents have comparable scores and risk profiles",
+                    "recommendation": "Review both documents carefully; consider combining favorable terms"
+                }
+
+
+    def _identify_critical_differences(self, clause_diff: dict, entity_diff: dict, 
+                                    rec_comp: dict) -> List[dict]:
+        """Identify and prioritize critical differences between documents."""
+        critical = []
+        
+        # Check for missing critical clauses
+        critical_clauses = ["indemnification", "liability", "termination", 
+                        "governing_law", "dispute_resolution"]
+        for clause in critical_clauses:
+            if clause in clause_diff:
+                if clause_diff[clause]["status"] != "present_in_both":
+                    critical.append({
+                        "type": "missing_clause",
+                        "severity": "HIGH",
+                        "clause": clause,
+                        "details": clause_diff[clause]["analysis"]
+                    })
+        
+        # Check for party differences
+        if "CONTRACT_PARTIES" in entity_diff:
+            party_data = entity_diff["CONTRACT_PARTIES"]
+            if party_data["only_in_doc1"] or party_data["only_in_doc2"]:
+                critical.append({
+                    "type": "party_difference",
+                    "severity": "HIGH",
+                    "details": f"Different parties identified: {party_data['only_in_doc1']} vs {party_data['only_in_doc2']}"
+                })
+        
+        # Check for money amount differences
+        if "MONEY_AMOUNTS" in entity_diff:
+            money_data = entity_diff["MONEY_AMOUNTS"]
+            if money_data["only_in_doc1"] or money_data["only_in_doc2"]:
+                critical.append({
+                    "type": "financial_difference",
+                    "severity": "HIGH",
+                    "details": f"Different monetary terms: {money_data['only_in_doc1']} vs {money_data['only_in_doc2']}"
+                })
+        
+        # Check for significant score differences
+        score_diff = abs(rec_comp["score_difference"])
+        if score_diff > 15:
+            critical.append({
+                "type": "risk_score_difference",
+                "severity": "MEDIUM",
+                "details": f"Significant risk score difference: {score_diff:.1f} points"
+            })
+        
+        return critical
+
+
+    def _calculate_overall_similarity(self, clause_diff: dict, entity_diff: dict, 
+                                    summary_similarity: float) -> dict:
+        """Calculate overall document similarity score."""
+        # Average clause similarity
+        clause_sims = [c["similarity"] for c in clause_diff.values() if "similarity" in c]
+        avg_clause_sim = sum(clause_sims) / len(clause_sims) if clause_sims else 0
+        
+        # Average entity similarity
+        entity_sims = [e["similarity"] for e in entity_diff.values()]
+        avg_entity_sim = sum(entity_sims) / len(entity_sims) if entity_sims else 0
+        
+        # Weighted overall similarity
+        overall = (avg_clause_sim * 0.4 + avg_entity_sim * 0.3 + summary_similarity * 100 * 0.3)
+        
+        if overall >= 80:
+            interpretation = "Documents are substantially similar"
+        elif overall >= 60:
+            interpretation = "Documents have moderate similarities with notable differences"
+        elif overall >= 40:
+            interpretation = "Documents have significant differences"
+        else:
+            interpretation = "Documents are substantially different"
+        
+        return {
+            "percentage": round(overall, 2),
+            "interpretation": interpretation,
+            "clause_similarity": round(avg_clause_sim, 2),
+            "entity_similarity": round(avg_entity_sim, 2),
+            "summary_similarity": round(summary_similarity * 100, 2)
+        }
+
+
+   
+        
+from docx import Document
+
+from docx import Document
+from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from datetime import datetime
+from typing import Dict, Optional
+import os
+
+class ContractTemplateGenerator:
+    """
+    Enhanced contract generator with multiple template types.
+    Supports filling placeholders with user data and generating downloadable contracts.
+    """
+    
+    def __init__(self):
+        self.templates = {
+            "nda": self._get_nda_template(),
+            "service_agreement": self._get_service_agreement_template(),
+        }
+    
+    def _get_nda_template(self) -> str:
+        """Non-Disclosure Agreement (NDA) Template"""
+        return """
+NON-DISCLOSURE AGREEMENT
+
+This Non-Disclosure Agreement ("Agreement") is entered into as of {{effective_date}}, by and between:
+
+DISCLOSING PARTY:
+{{disclosing_party_name}}
+{{disclosing_party_address}}
+{{disclosing_party_email}}
+
+and
+
+RECEIVING PARTY:
+{{receiving_party_name}}
+{{receiving_party_address}}
+{{receiving_party_email}}
+
+(collectively referred to as the "Parties")
+
+WHEREAS, the Disclosing Party possesses certain confidential and proprietary information related to {{business_purpose}};
+
+WHEREAS, the Receiving Party desires to receive such confidential information for the purpose of {{purpose_of_disclosure}};
+
+NOW, THEREFORE, in consideration of the mutual covenants and agreements contained herein, the Parties agree as follows:
+
+1. DEFINITION OF CONFIDENTIAL INFORMATION
+
+"Confidential Information" means any and all information disclosed by the Disclosing Party to the Receiving Party, whether orally, in writing, or in any other form, including but not limited to:
+   a) Technical data, trade secrets, know-how, research, product plans, products, services
+   b) Software, algorithms, source code, object code
+   c) Customer lists, supplier information, business strategies
+   d) Financial information, forecasts, budgets
+   e) Marketing plans, sales data
+   f) Any other information marked as "Confidential" or that would reasonably be considered confidential
+
+2. OBLIGATIONS OF RECEIVING PARTY
+
+The Receiving Party agrees to:
+   a) Hold and maintain the Confidential Information in strict confidence
+   b) Not disclose the Confidential Information to any third parties without prior written consent
+   c) Use the Confidential Information solely for the purpose of {{purpose_of_disclosure}}
+   d) Protect the Confidential Information with the same degree of care used to protect its own confidential information, but in no case less than reasonable care
+   e) Limit access to the Confidential Information to employees and contractors who have a legitimate need to know
+
+3. EXCLUSIONS FROM CONFIDENTIAL INFORMATION
+
+Confidential Information shall not include information that:
+   a) Is or becomes publicly available through no breach of this Agreement
+   b) Was rightfully in the Receiving Party's possession prior to disclosure
+   c) Is independently developed by the Receiving Party without use of the Confidential Information
+   d) Is rightfully received from a third party without breach of any confidentiality obligation
+
+4. TERM AND TERMINATION
+
+This Agreement shall commence on the Effective Date and continue for a period of {{term_years}} years, unless terminated earlier by either Party with {{notice_period}} days written notice. The obligations of confidentiality shall survive termination for a period of {{survival_years}} years.
+
+5. RETURN OF MATERIALS
+
+Upon termination of this Agreement or upon request by the Disclosing Party, the Receiving Party shall promptly return or destroy all Confidential Information and certify such destruction in writing.
+
+6. NO LICENSE
+
+Nothing in this Agreement grants the Receiving Party any license or right to the Confidential Information except as expressly stated herein.
+
+7. REMEDIES
+
+The Receiving Party acknowledges that breach of this Agreement may cause irreparable harm for which monetary damages would be inadequate. The Disclosing Party shall be entitled to seek equitable relief, including injunction and specific performance, in addition to all other remedies available at law or in equity.
+
+8. GOVERNING LAW
+
+This Agreement shall be governed by and construed in accordance with the laws of {{governing_state}}, without regard to its conflict of law provisions.
+
+9. ENTIRE AGREEMENT
+
+This Agreement constitutes the entire agreement between the Parties concerning the subject matter hereof and supersedes all prior agreements and understandings.
+
+10. AMENDMENTS
+
+This Agreement may only be amended or modified by a written document signed by both Parties.
+
+IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first written above.
+
+DISCLOSING PARTY:
+
+_________________________________
+{{disclosing_party_name}}
+{{disclosing_party_title}}
+Date: {{signature_date}}
+
+
+RECEIVING PARTY:
+
+_________________________________
+{{receiving_party_name}}
+{{receiving_party_title}}
+Date: {{signature_date}}
+"""
+
+    def _get_service_agreement_template(self) -> str:
+        """Service Agreement Template"""
+        return """
+SERVICE AGREEMENT
+
+This Service Agreement ("Agreement") is entered into as of {{effective_date}}, by and between:
+
+SERVICE PROVIDER:
+{{provider_name}}
+{{provider_address}}
+{{provider_email}}
+{{provider_phone}}
+
+and
+
+CLIENT:
+{{client_name}}
+{{client_address}}
+{{client_email}}
+{{client_phone}}
+
+(collectively referred to as the "Parties")
+
+WHEREAS, the Service Provider is engaged in the business of providing {{service_type}} services;
+
+WHEREAS, the Client desires to engage the Service Provider to perform certain services as described herein;
+
+NOW, THEREFORE, in consideration of the mutual covenants and agreements contained herein, the Parties agree as follows:
+
+1. SERVICES
+
+The Service Provider agrees to provide the following services ("Services"):
+
+{{service_description}}
+
+The Services shall be performed in accordance with industry standards and professional practices.
+
+2. TERM
+
+This Agreement shall commence on {{start_date}} and continue until {{end_date}} ("Initial Term"), unless terminated earlier in accordance with this Agreement. 
+
+This Agreement may be renewed for additional {{renewal_period}} periods upon mutual written agreement of the Parties at least {{renewal_notice_days}} days prior to expiration.
+
+3. COMPENSATION
+
+3.1 Service Fees
+The Client shall pay the Service Provider as follows:
+
+Payment Structure: {{payment_structure}}
+Total Amount: {{total_amount}}
+Payment Schedule: {{payment_schedule}}
+
+3.2 Additional Expenses
+The Service Provider shall be reimbursed for pre-approved, reasonable expenses incurred in the performance of Services, including:
+   - Travel expenses
+   - Materials and supplies
+   - Third-party services
+
+All expenses must be documented with receipts and approved by the Client in writing prior to incurrence.
+
+3.3 Payment Terms
+Invoices shall be submitted {{invoice_frequency}} and are due within {{payment_terms}} days of receipt. Late payments shall accrue interest at {{late_fee_rate}}% per month.
+
+4. DELIVERABLES
+
+The Service Provider shall deliver the following to the Client:
+
+{{deliverables}}
+
+All deliverables shall be delivered by {{delivery_date}}, subject to any agreed-upon extensions.
+
+5. INDEPENDENT CONTRACTOR
+
+The Service Provider is an independent contractor and not an employee of the Client. The Service Provider shall be responsible for all taxes, insurance, and other obligations related to their status as an independent contractor.
+
+6. INTELLECTUAL PROPERTY
+
+6.1 Client Materials
+All materials, information, and intellectual property provided by the Client remain the property of the Client.
+
+6.2 Work Product
+{{ip_ownership_clause}}
+
+6.3 Pre-Existing Materials
+Any pre-existing materials, tools, or intellectual property owned by the Service Provider prior to this Agreement shall remain the property of the Service Provider.
+
+7. CONFIDENTIALITY
+
+Both Parties agree to maintain the confidentiality of any proprietary or confidential information disclosed during the term of this Agreement. This obligation shall survive termination for a period of {{confidentiality_period}} years.
+
+8. WARRANTIES
+
+The Service Provider warrants that:
+   a) Services will be performed in a professional and workmanlike manner
+   b) Services will comply with all applicable laws and regulations
+   c) Service Provider has the right and authority to enter into this Agreement
+   d) Services will not infringe upon any third-party intellectual property rights
+
+9. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL EITHER PARTY BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOST PROFITS, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+The Service Provider's total liability under this Agreement shall not exceed {{liability_cap}}.
+
+10. TERMINATION
+
+10.1 Termination for Convenience
+Either Party may terminate this Agreement with {{termination_notice}} days written notice.
+
+10.2 Termination for Cause
+Either Party may terminate this Agreement immediately upon written notice if the other Party:
+   a) Materially breaches this Agreement and fails to cure within {{cure_period}} days
+   b) Becomes insolvent or files for bankruptcy
+   c) Engages in fraudulent or illegal conduct
+
+10.3 Effect of Termination
+Upon termination, the Client shall pay for all Services performed up to the termination date and any expenses incurred.
+
+11. DISPUTE RESOLUTION
+
+Any disputes arising under this Agreement shall be resolved through:
+{{dispute_resolution_method}}
+
+12. GENERAL PROVISIONS
+
+12.1 Entire Agreement
+This Agreement constitutes the entire agreement between the Parties and supersedes all prior agreements.
+
+12.2 Amendments
+This Agreement may only be amended in writing signed by both Parties.
+
+12.3 Assignment
+Neither Party may assign this Agreement without the prior written consent of the other Party.
+
+12.4 Governing Law
+This Agreement shall be governed by the laws of {{governing_state}}.
+
+12.5 Severability
+If any provision of this Agreement is found invalid or unenforceable, the remaining provisions shall continue in full force and effect.
+
+12.6 Notices
+All notices under this Agreement shall be in writing and sent to the addresses listed above.
+
+IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first written above.
+
+SERVICE PROVIDER:
+
+_________________________________
+{{provider_name}}
+{{provider_title}}
+Date: {{signature_date}}
+
+
+CLIENT:
+
+_________________________________
+{{client_name}}
+{{client_title}}
+Date: {{signature_date}}
+"""
+
+    def generate_contract(self, 
+                         contract_type: str, 
+                         user_data: Dict[str, str], 
+                         output_path: str,
+                         format_type: str = "docx") -> str:
+        """
+        Generate a contract from template with user data.
+        
+        Args:
+            contract_type: Type of contract ("nda" or "service_agreement")
+            user_data: Dictionary with placeholder values
+            output_path: Path where the contract will be saved
+            format_type: Output format ("docx" or "txt")
+            
+        Returns:
+            Path to the generated contract file
+        """
+        if contract_type not in self.templates:
+            raise ValueError(f"Unknown contract type: {contract_type}. Available: {list(self.templates.keys())}")
+        
+        # Get template
+        template_content = self.templates[contract_type]
+        
+        # Add default values for common fields if not provided
+        default_values = {
+            "signature_date": datetime.now().strftime("%B %d, %Y"),
+            "effective_date": datetime.now().strftime("%B %d, %Y"),
+        }
+        
+        # Merge defaults with user data (user data takes precedence)
+        filled_data = {**default_values, **user_data}
+        
+        # Fill in placeholders
+        contract_content = template_content
+        for key, value in filled_data.items():
+            placeholder = f"{{{{{key}}}}}"
+            contract_content = contract_content.replace(placeholder, str(value))
+        
+        # Check for unfilled placeholders
+        import re
+        unfilled = re.findall(r'\{\{([^}]+)\}\}', contract_content)
+        if unfilled:
+            print(f"Warning: The following placeholders were not filled: {', '.join(unfilled)}")
+        
+        # Generate output file
+        if format_type == "docx":
+            return self._generate_docx(contract_content, output_path, contract_type)
+        else:
+            return self._generate_txt(contract_content, output_path)
+    
+    def _generate_docx(self, content: str, output_path: str, contract_type: str) -> str:
+        """Generate a formatted DOCX file"""
+        doc = Document()
+        
+        # Set document margins
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(1)
+            section.bottom_margin = Inches(1)
+            section.left_margin = Inches(1)
+            section.right_margin = Inches(1)
+        
+        # Add content with formatting
+        lines = content.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                doc.add_paragraph()
+                continue
+            
+            paragraph = doc.add_paragraph()
+            run = paragraph.add_run(line)
+            
+            # Format titles (ALL CAPS lines)
+            if line.isupper() and len(line) > 3:
+                run.bold = True
+                run.font.size = Pt(14)
+                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Format section headers (lines starting with numbers)
+            elif line[0].isdigit() and '.' in line[:3]:
+                run.bold = True
+                run.font.size = Pt(12)
+            else:
+                run.font.size = Pt(11)
+        
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else '.', exist_ok=True)
+        
+        # Save document
+        doc.save(output_path)
+        return output_path
+    
+    def _generate_txt(self, content: str, output_path: str) -> str:
+        """Generate a plain text file"""
+        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else '.', exist_ok=True)
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        
+        return output_path
+    
+    def get_required_fields(self, contract_type: str) -> list:
+        """Get list of required fields for a contract type"""
+        if contract_type not in self.templates:
+            raise ValueError(f"Unknown contract type: {contract_type}")
+        
+        import re
+        template = self.templates[contract_type]
+        placeholders = re.findall(r'\{\{([^}]+)\}\}', template)
+        
+        # Remove duplicates and sort
+        return sorted(list(set(placeholders)))
+    
+    def get_available_templates(self) -> Dict[str, str]:
+        """Get list of available contract templates with descriptions"""
+        return {
+            "nda": "Non-Disclosure Agreement (NDA) - Protects confidential information between parties",
+            "service_agreement": "Service Agreement - Defines terms for professional services between provider and client"
+        }
+
+

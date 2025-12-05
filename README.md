@@ -8,7 +8,7 @@ This project is a comprehensive AI-assisted system designed to simplify the unde
 
 The system consists of:
 
-* **Next.js Frontend** — for user interaction, file uploads, comparison views, and document generation forms.
+* **Typescript Frontend** — for user interaction, file uploads, comparison views, and document generation forms.
 * **FastAPI Backend** — for NLP processing, clause extraction, recommendation scoring, and document generation.
 * **Ollama-based Chat Module** — for conversational legal assistance and contextual explanations.
 
